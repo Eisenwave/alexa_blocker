@@ -36,45 +36,38 @@ import sys
 #
 # The protocol is stateless.
 # Before each command, all IPs are effectively unblocked and then re-blocked according to the command.
-
-def unblock():
-    os.system("./alexa-block.sh reset")
-
-def block_all():
-    os.system("./alexa-block.sh all")
-
-def block_essentials():
-    os.system("./alexa-block.sh essential")
-
-def block_obsoletes():
-    os.system("./alexa-block.sh obsolete")
+#
+# The server also responds with single characters.
+#
+# g: - Good
+#    - if the command was executed successfuly
+# f: - Fail
+#    - if the command failed
+# i: - Illegal
+#    - if the command itself unknown
+    
+def exec_block_command(command_str):
+    syscall = "sudo ./alexa-block.sh " + command_str
+    code = os.system(syscall)
+    return 'g' if code == 0 else 'f'
 
 def interpret(command):
     if command == 'u':
-        unblock()
+        return exec_block_command("reset")
     elif command == 'a':
-        block_all()
+        return exec_block_command("all")
     elif command == 'e':
-        block_essentials()
+        return exec_block_command("essential")
     elif command == 'o':
-        block_obsoletes
+        return exec_block_command("obsolete")
     else:
-        return False
-    return True
+        return 'i'
 
 def read_all_data(connection, client_address):
-    result = bytearray()
     try:
-        # Receive the data in small chunks and retransmit it
-        data = connection.recv(common.BUFFER_SIZE)
-        while data:
-            result += data
-            data = connection.recv(common.BUFFER_SIZE)
-    except x:
-        printerr('ERROR: "{}"'.format(x))
-    finally:
-        connection.close()
-        return result
+        return connection.recv(1)
+    except:
+        return None
 
     
 def parse_ip(ip_str):
@@ -119,10 +112,15 @@ def loop():
     command = read_all_data(connection, client_adr)
     if command != None:
         command_str = command.decode()
-        printerr('"{}"'.format(command_str))
-        if not interpret(command_str):
-            printerr('error: unknown command')
-
+        sys.stderr.write('"{}" -> '.format(command_str))
+        response = interpret(command_str)
+        printerr(response)
+        try:
+            connection.sendall(response.encode())
+        finally:
+            connection.close()
+    else:
+        connection.close()
 
 if __name__ == "__main__":
     server_adr = ('localhost', common.PORT)
