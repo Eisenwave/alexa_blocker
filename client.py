@@ -6,18 +6,25 @@ from common import printerr
 import socket
 import sys
 
-if __name__ == "__main__":
+def loop():
+    message = input("Command: ")
+    if message == 'q':
+        exit(0)
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    sadr = ('localhost', common.PORT)
-    printerr('connecting to {}:{}'.format(sadr[0], sadr[1]))
     sock.connect(sadr) 
 
     try:
-        message = 'u'
-        printerr('sending "{}"'.format(message))
         sock.sendall(message.encode())
-
+        response = sock.recv(1)
+        printerr("Response:", response.decode(), '\n')
     finally:
-        printerr('closing socket')
         sock.close()
+
+if __name__ == "__main__":
+    sadr = ('localhost', common.PORT)
+    printerr('Connecting to {}:{}'.format(sadr[0], sadr[1]))
+    printerr('Possible commands are', ['u', 'a', 'o', 'e'], "or q for quitting the client", '\n')
+    
+    while True:
+        loop()
