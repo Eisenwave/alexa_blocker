@@ -4,6 +4,7 @@
 
 # enable iptables with bridge
 if ! modprobe br_netfilter; then
+    printf "modprobe failed\n"
     exit $?
 fi
 echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
@@ -149,9 +150,10 @@ elif [[ "$1" == "all" ]]; then
     block-essential
     printf 'Blocked all relevant IPs' 
 else
-    printf "Usage: $0 <all|essential|obsolete|reset>"
+    printf "Usage: $0 <all|essential|obsolete|reset>\n"
+    exit 1
 fi
 
 printf '\n'
-
+exit 0
 
