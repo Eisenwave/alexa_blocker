@@ -3,8 +3,12 @@
 import common
 from common import printerr
 
+import os
 import socket
 import sys
+
+def blockCompletely():
+    os.system("alexa-block.sh")
 
 def onConnection(connection, client_address):
     try:
