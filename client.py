@@ -24,7 +24,7 @@ def loop():
 if __name__ == "__main__":
     sadr = ('localhost', common.PORT)
     printerr('Connecting to {}:{}'.format(sadr[0], sadr[1]))
-    printerr('Possible commands are', ['u', 'a', 'o', 'e'], "or q for quitting the client", '\n')
+    printerr('Possible commands are', ['u', 'a', 'o', 'e', 'm'], "or q for quitting the client", '\n')
     
     while True:
         loop()

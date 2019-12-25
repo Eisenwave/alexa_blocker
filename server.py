@@ -25,6 +25,9 @@ import sys
 # The protocol allows any client, such as an app to block and unblock their Alexa's network bridge.
 # For this purpose, single, lower-case characters are transmitted over TCP for the commands.
 #
+# m: - Marco
+#    - used for pinging the server
+#    - no command is performed, ping is sent back
 # u: - Unblock
 #    - unblocks all the blocked IP-addresses
 # a: - All blocked
@@ -52,7 +55,9 @@ def exec_block_command(command_str):
     return 'g' if code == 0 else 'f'
 
 def interpret(command):
-    if command == 'u':
+    if command == 'm':
+        return 'p'
+    elif command == 'u':
         return exec_block_command("reset")
     elif command == 'a':
         return exec_block_command("all")
@@ -131,5 +136,8 @@ if __name__ == "__main__":
     
     printerr('started server on {}:{}'.format(server_adr[0], server_adr[1]))
 
-    while True:
-        loop()
+    try:
+        while True:
+            loop()
+    finally:
+        sock.close()
