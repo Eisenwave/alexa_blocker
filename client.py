@@ -14,17 +14,9 @@ if __name__ == "__main__":
     sock.connect(sadr) 
 
     try:
-        message = 'This is the message.  It will be repeated.'
+        message = 'u'
         printerr('sending "{}"'.format(message))
         sock.sendall(message.encode())
-
-        amount_received = 0
-        amount_expected = len(message)
-        
-        while amount_received < amount_expected:
-            data = sock.recv(16)
-            amount_received += len(data)
-            printerr('received "{}"'.format(data))
 
     finally:
         printerr('closing socket')
