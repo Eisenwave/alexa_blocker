@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Alexa Blocker</string>
+    <string name="status">Status:</string>
+    <string name="togglebutton">ToggleButton</string>
+    <string name="alexa_blocked">Alexa Blocked</string>
+    <string name="alexa_unblocked">Alexa Unblocked</string>
 </resources>
