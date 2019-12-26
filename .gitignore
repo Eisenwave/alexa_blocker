@@ -1,5 +1,7 @@
 # directories
 __pycache__/
+.idea/
+.gradle/
 
 # files
 .directory
