@@ -22,7 +22,8 @@ def loop():
         sock.close()
 
 if __name__ == "__main__":
-    sadr = ('localhost', common.PORT)
+    host = 'localhost' if len(sys.argv) < 2 else sys.argv[1]
+    sadr = (host, common.PORT)
     printerr('Connecting to {}:{}'.format(sadr[0], sadr[1]))
     printerr('Possible commands are', ['u', 'a', 'o', 'e', 'm'], "or q for quitting the client", '\n')
     

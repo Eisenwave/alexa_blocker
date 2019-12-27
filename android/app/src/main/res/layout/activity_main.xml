@@ -47,8 +47,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/togglebutton"
-            android:textOff="@string/alexa_blocked"
-            android:textOn="@string/alexa_unblocked" />
+            android:textOff="@string/alexa_unblocked"
+            android:textOn="@string/alexa_blocked" />
 
     </LinearLayout>
 

@@ -128,13 +128,13 @@ def loop():
         connection.close()
 
 if __name__ == "__main__":
-    server_adr = ('localhost', common.PORT)
+    server_adr = ('', common.PORT)
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(server_adr)
     sock.listen(1)
     
-    printerr('started server on {}:{}'.format(server_adr[0], server_adr[1]))
+    printerr('started server on port {}'.format(server_adr[1]))
 
     try:
         while True:
