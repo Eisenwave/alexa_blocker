@@ -10,4 +10,7 @@
     <string name="status_no_server_found">No server found</string>
     <string name="status_connection_lost">Connection lost</string>
     <string name="status_establishing_failed">Establishing connection failed</string>
+    <string name="status_waiting_for_response">Waiting for response</string>
+    <string name="status_command_processed">Command processed</string>
+    <string name="command_failed">Command failed</string>
 </resources>

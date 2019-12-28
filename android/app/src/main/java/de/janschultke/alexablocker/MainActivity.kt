@@ -237,16 +237,26 @@ class MainActivity : AppCompatActivity() {
         toggleButton.isEnabled = false
     }
 
+    private fun onCommandResult(success: Boolean) {
+        statusTextView.text = if (success) {
+            getString(R.string.status_command_processed)
+        } else {
+            getString(R.string.command_failed)
+        }
+    }
+
     private fun initToggleButton() {
         toggleButton.setOnCheckedChangeListener { _, isChecked ->
+            statusTextView.text = getString(R.string.status_waiting_for_response)
+
             GlobalScope.launch(Dispatchers.IO) {
+                var connectSuccess = true
+                var success = false
 
                 when (val responseByte = sendBlockingCommand(isChecked)) {
                     -2 -> {
                         Log.w("block", "server unreachable")
-                        GlobalScope.launch(Dispatchers.Main) {
-                            onConnectionLost()
-                        }
+                        connectSuccess = false
                     }
 
                     -1 -> {
@@ -254,6 +264,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     'g'.toInt() -> {
+                        success = true
                         Log.i("block", "OK")
                     }
 
@@ -267,6 +278,15 @@ class MainActivity : AppCompatActivity() {
 
                     else -> {
                         Log.i("block", "unknown response: $responseByte")
+                    }
+                }
+
+                GlobalScope.launch(Dispatchers.Main) {
+                    if (!connectSuccess) {
+                        onConnectionLost()
+                    }
+                    else {
+                        onCommandResult(success)
                     }
                 }
             }
