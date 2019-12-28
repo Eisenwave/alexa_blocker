@@ -4,4 +4,10 @@
     <string name="togglebutton">ToggleButton</string>
     <string name="alexa_blocked">Alexa Blocked</string>
     <string name="alexa_unblocked">Alexa Unblocked</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_looking">Looking for server …</string>
+    <string name="status_establishing_connection">Establishing connection …</string>
+    <string name="status_no_server_found">No server found</string>
+    <string name="status_connection_lost">Connection lost</string>
+    <string name="status_establishing_failed">Establishing connection failed</string>
 </resources>

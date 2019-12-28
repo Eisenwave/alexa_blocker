@@ -3,6 +3,7 @@ package de.janschultke.alexablocker
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.widget.TextView
 import android.widget.ToggleButton
 import kotlinx.coroutines.*
 import java.lang.Exception
@@ -70,21 +71,19 @@ fun connectToSocket(address: String, port: Int, timeoutMillis: Int): Socket? {
         socket.connect(InetSocketAddress(address, port), timeoutMillis)
         socket
     } catch (e: Exception) {
-        Log.v("ping", "$address:$port exception", e)
+        //Log.v("ping", "$address:$port exception", e)
         null
     }
 }
 
 fun pingSocket(socket: Socket, timeoutMillis: Int): Boolean {
     socket.soTimeout = timeoutMillis
-    socket.use {
-        val outStream = socket.getOutputStream()
-        outStream.write('m'.toInt())
+    val outStream = socket.getOutputStream()
+    outStream.write('m'.toInt())
 
-        val inStream = socket.getInputStream()
-        val response = inStream.read()
-        return response.toChar() == 'p'
-    }
+    val inStream = socket.getInputStream()
+    val response = inStream.read()
+    return response.toChar() == 'p'
 }
 
 @ExperimentalUnsignedTypes
@@ -93,74 +92,183 @@ fun pingIpWithMarco(address: String): Boolean {
     val port = 11444
 
     val socket = connectToSocket(address, port, timeoutMillis)
-    if (socket == null) {
-        Log.println(Log.DEBUG, "ping", "$address:$port unreachable")
-        return false
+    socket.use {
+        if (socket == null) {
+            Log.d("ping", "$address:$port unreachable")
+            return false
+        }
+
+        val result = pingSocket(socket, timeoutMillis)
+        Log.d(
+            "ping",
+            "$address:$port ${if (result) "pinged with success" else "pinged with failure"}"
+        )
+        return result
     }
-
-    val result = pingSocket(socket, timeoutMillis)
-    Log.println(
-        Log.DEBUG,
-        "ping",
-        "$address:$port ${if (result) "pinged with success" else "pinged with failure"}"
-    )
-    return result
-}
-
-@ExperimentalUnsignedTypes
-suspend fun establishConnection(): Ipv4? {
-    val jobs = mutableListOf<Job>()
-    val results = Array(256) { false }
-
-    val resultIp = Ipv4(arrayOf(192u, 168u, 0u, 0u))
-    for (i in 0..255) {
-        val ip = resultIp.clone()
-        ip.bytes[3] = i.toUByte()
-
-        val job = GlobalScope.launch(Dispatchers.IO) { results[i] = pingIpWithMarco(ip.toString()) }
-        jobs.add(job)
-    }
-
-    for (job in jobs) {
-        job.join()
-    }
-
-    val firstSuccess = results.indexOfFirst { it }
-    if (firstSuccess == -1) {
-        return null
-    }
-
-    resultIp.bytes[3] = firstSuccess.toUByte()
-    return resultIp
 }
 
 @ExperimentalUnsignedTypes
 class MainActivity : AppCompatActivity() {
 
+    private var ip: Ipv4? = null
+
+    private lateinit var toggleButton: ToggleButton
+    private lateinit var statusTextView: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initToggleButton()
+        findWidgets()
+        initWidgets()
+
+        Log.i("ping", "finding server in local network ...")
 
         GlobalScope.launch {
-            Log.println(Log.DEBUG, "ping", "establishing connection ...")
-            val ip = establishConnection()
-            if (ip == null) {
-                Log.println(Log.ERROR, "ping", "could not establish connection")
-            } else {
-                Log.println(Log.ERROR, "ping", "established connection with $ip")
+            ip = findServerInLocalNetwork()
+            GlobalScope.launch(Dispatchers.Main) {
+                if (ip == null) {
+                    Log.e("ping", "could not establish connection")
+                    onNoServerFound()
+                } else {
+                    Log.i("ping", "established connection with $ip")
+                    onServerFound()
+                }
+            }
+
+        }
+    }
+
+    private fun findWidgets() {
+        toggleButton = findViewById(R.id.toggleButton)
+        statusTextView = findViewById(R.id.statusTextView)
+    }
+
+    private fun initWidgets() {
+        statusTextView.text = getString(R.string.status_looking)
+        initToggleButton()
+    }
+
+    private fun onNoServerFound() {
+        statusTextView.text = getString(R.string.status_no_server_found)
+    }
+
+    private fun onConnectionEstablishingFailed() {
+        statusTextView.text = getString(R.string.status_establishing_failed)
+    }
+
+    private fun onServerFound() {
+        val timeoutMillis = 1000
+
+        statusTextView.text = getString(R.string.status_establishing_connection)
+
+        GlobalScope.launch {
+            Log.i("ping", "pinging $ip")
+
+            val socket = connectToSocket(ip.toString(), 11444, timeoutMillis)
+
+            if (socket == null || !pingSocket(socket, timeoutMillis)) {
+                GlobalScope.launch(Dispatchers.Main) {
+                    onConnectionEstablishingFailed()
+                }
+                return@launch
+            }
+
+            Log.i("ping", "connection with $ip established")
+            GlobalScope.launch(Dispatchers.Main) {
+                onConnect()
             }
         }
     }
 
-    fun initToggleButton() {
-        val toggle = findViewById<ToggleButton>(R.id.toggleButton)
-        toggle.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                println("enabled")
+    private fun onConnect() {
+        toggleButton.isEnabled = true
+        statusTextView.text = getString(R.string.status_connected)
+    }
+
+    @ExperimentalUnsignedTypes
+    private suspend fun findServerInLocalNetwork(): Ipv4? {
+        val jobs = mutableListOf<Job>()
+        val results = Array(256) { false }
+
+        val resultIp = Ipv4(arrayOf(192u, 168u, 0u, 0u))
+        for (i in 0..255) {
+            val ip = resultIp.clone()
+            ip.bytes[3] = i.toUByte()
+
+            val job = GlobalScope.launch(Dispatchers.IO) {
+                results[i] = pingIpWithMarco(ip.toString())
+            }
+            jobs.add(job)
+        }
+
+        for (job in jobs) {
+            job.join()
+        }
+
+        val firstSuccess = results.indexOfFirst { it }
+        if (firstSuccess == -1) {
+            return null
+        }
+
+        resultIp.bytes[3] = firstSuccess.toUByte()
+        return resultIp
+    }
+
+    private fun sendBlockingCommand(isBlocked: Boolean): Int {
+        val socket = connectToSocket(ip.toString(), 11444, 1000) ?: return -2
+
+        socket.use {
+            if (isBlocked) {
+                Log.i("block", "sending 'a' to $ip")
+                socket.getOutputStream().write('a'.toInt())
             } else {
-                println("disabled")
+                Log.i("block", "sending 'u' to $ip")
+                socket.getOutputStream().write('u'.toInt())
+            }
+
+            return socket.getInputStream().read()
+        }
+
+    }
+
+    private fun onConnectionLost() {
+        statusTextView.text = getString(R.string.status_connection_lost)
+        toggleButton.isEnabled = false
+    }
+
+    private fun initToggleButton() {
+        toggleButton.setOnCheckedChangeListener { _, isChecked ->
+            GlobalScope.launch(Dispatchers.IO) {
+
+                when (val responseByte = sendBlockingCommand(isChecked)) {
+                    -2 -> {
+                        Log.w("block", "server unreachable")
+                        GlobalScope.launch(Dispatchers.Main) {
+                            onConnectionLost()
+                        }
+                    }
+
+                    -1 -> {
+                        Log.w("block", "empty response")
+                    }
+
+                    'g'.toInt() -> {
+                        Log.i("block", "OK")
+                    }
+
+                    'f'.toInt() -> {
+                        Log.w("block", "command failed")
+                    }
+
+                    'i'.toInt() -> {
+                        Log.w("block", "command incorrect")
+                    }
+
+                    else -> {
+                        Log.i("block", "unknown response: $responseByte")
+                    }
+                }
             }
         }
     }
