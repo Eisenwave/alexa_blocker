@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!(ipv6.src == fe80::ca4c:75ff:fe77:17d9) and !arp and !icmp and !mdns and !igmp and !(tcp.flags.reset == 1 or tcp.flags.syn == 1)
-
 # enable iptables with bridge
 if ! modprobe br_netfilter; then
     printf "modprobe failed\n"
